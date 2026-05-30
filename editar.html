@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Editar Usuario — UsuariosApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#0a0c10;--surface:#111318;--surface2:#1a1d25;--border:#2a2d38;--accent:#00e5a0;--danger:#ff3b5c;--warn:#ffc845;--text:#e8eaf0;--muted:#6b7080;--mono:'Space Mono',monospace;--sans:'Syne',sans-serif;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .panel{position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;width:100%;max-width:480px;}
+  .panel-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .panel-title{font-size:.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:.15em;text-transform:uppercase;}
+  .mode-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.68rem;padding:4px 10px;border-radius:20px;background:rgba(255,200,69,.12);color:var(--warn);border:1px solid rgba(255,200,69,.3);}
+  .panel-body{padding:1.5rem;}
+  .form-group{margin-bottom:1.2rem;}
+  label{display:block;font-size:.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+  input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:10px 14px;transition:border-color .2s;outline:none;}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,160,.1);}
+  input.error{border-color:var(--danger);}
+  input[readonly]{color:var(--muted);cursor:not-allowed;}
+  .error-msg{font-family:var(--mono);font-size:.7rem;color:var(--danger);margin-top:4px;display:none;}
+  .error-msg.show{display:block;}
+  .btn{font-family:var(--mono);font-size:.78rem;font-weight:700;letter-spacing:.08em;border:none;border-radius:8px;padding:12px 20px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;text-decoration:none;}
+  .btn-primary{background:var(--warn);color:#0a0c10;}
+  .btn-primary:hover{filter:brightness(1.1);}
+  .btn-cancel{background:transparent;color:var(--muted);border:1px solid var(--border);margin-top:8px;}
+  .btn-cancel:hover{color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">// EDITAR USUARIO</span>
+    <span class="mode-badge">● UPDATE</span>
+  </div>
+  <div class="panel-body">
+    <form method="POST" action="/actualizar" onsubmit="return validar()">
+
+      <div class="form-group">
+        <label>ID (no editable)</label>
+        <input type="text" name="id" id="f-id" value="{{ usuario.id }}" readonly/>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" name="nombre" id="f-nombre" value="{{ usuario.nombre }}" placeholder="Nombre del usuario"/>
+        <div class="error-msg" id="err-nombre">El nombre es obligatorio.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Correo electrónico *</label>
+        <input type="email" name="correo" id="f-correo" value="{{ usuario.correo }}" placeholder="correo@email.com"/>
+        <div class="error-msg" id="err-correo">Correo inválido o vacío.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">✎ ACTUALIZAR USUARIO</button>
+    </form>
+    <a href="/" class="btn btn-cancel">✕ CANCELAR</a>
+  </div>
+</div>
+
+<script>
+function validar() {
+  let ok = true;
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const correo = document.getElementById('f-correo').value.trim();
+  const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const se = (errId, fieldId, show) => {
+    document.getElementById(errId).classList.toggle('show', show);
+    document.getElementById(fieldId).classList.toggle('error', show);
+    if (show) ok = false;
+  };
+  se('err-nombre', 'f-nombre', !nombre);
+  se('err-correo', 'f-correo', !correo || !emailRx.test(correo));
+  return ok;
+}
+</script>
+</body>
+</html>

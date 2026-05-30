@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UsuariosApp — AWS DynamoDB</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#0a0c10;--surface:#111318;--surface2:#1a1d25;--border:#2a2d38;
+    --accent:#00e5a0;--danger:#ff3b5c;--warn:#ffc845;
+    --text:#e8eaf0;--muted:#6b7080;
+    --mono:'Space Mono',monospace;--sans:'Syne',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(10,12,16,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;letter-spacing:-0.02em;}
+  .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+  .badge-aws{font-family:var(--mono);font-size:.65rem;background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.3);padding:2px 8px;border-radius:4px;letter-spacing:.1em;}
+  .header-stats{display:flex;gap:1.5rem;font-family:var(--mono);font-size:.75rem;color:var(--muted);}
+  .stat-val{color:var(--accent);font-weight:700;}
+
+  .app{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:2rem;display:grid;grid-template-columns:380px 1fr;gap:2rem;align-items:start;}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .panel-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .panel-title{font-size:.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:.15em;text-transform:uppercase;}
+  .panel-title span{color:var(--accent);}
+  .panel-body{padding:1.5rem;}
+
+  .form-group{margin-bottom:1.2rem;}
+  label{display:block;font-size:.7rem;font-family:var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+  input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:10px 14px;transition:border-color .2s,box-shadow .2s;outline:none;}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,160,.1);}
+  input.error{border-color:var(--danger);}
+  .error-msg{font-family:var(--mono);font-size:.7rem;color:var(--danger);margin-top:4px;display:none;}
+  .error-msg.show{display:block;}
+
+  .btn{font-family:var(--mono);font-size:.78rem;font-weight:700;letter-spacing:.08em;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn-primary{background:var(--accent);color:#0a0c10;width:100%;justify-content:center;padding:12px;}
+  .btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .btn-danger{background:rgba(255,59,92,.1);color:var(--danger);border:1px solid rgba(255,59,92,.3);}
+  .btn-danger:hover{background:var(--danger);color:#fff;}
+  .btn-edit{background:rgba(255,200,69,.1);color:var(--warn);border:1px solid rgba(255,200,69,.3);}
+  .btn-edit:hover{background:var(--warn);color:#0a0c10;}
+  .btn-cancel{background:transparent;color:var(--muted);border:1px solid var(--border);width:100%;justify-content:center;padding:10px;margin-top:8px;}
+  .btn-cancel:hover{color:var(--text);}
+
+  .mode-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.68rem;padding:4px 10px;border-radius:20px;letter-spacing:.08em;}
+  .mode-create{background:rgba(0,229,160,.12);color:var(--accent);border:1px solid rgba(0,229,160,.3);}
+  .mode-edit{background:rgba(255,200,69,.12);color:var(--warn);border:1px solid rgba(255,200,69,.3);}
+
+  .search-bar{display:flex;gap:.75rem;margin-bottom:1.2rem;}
+  .search-wrap{position:relative;flex:1;}
+  .search-wrap input{padding-left:36px;}
+  .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);}
+
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  thead th{font-family:var(--mono);font-size:.65rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr{border-bottom:1px solid rgba(42,45,56,.5);transition:background .15s;animation:rowIn .3s ease both;}
+  @keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  td{padding:12px 14px;vertical-align:middle;font-family:var(--mono);}
+  .td-id{color:var(--muted);font-size:.7rem;}
+  .td-name{font-weight:700;color:var(--text);font-family:var(--sans);}
+  .td-email{color:var(--muted);font-size:.78rem;}
+  .actions{display:flex;gap:6px;}
+
+  .empty-state{text-align:center;padding:3rem 2rem;color:var(--muted);}
+  .empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:.4;}
+  .empty-state p{font-family:var(--mono);font-size:.8rem;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:360px;width:90%;animation:modalIn .2s ease;}
+  @keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  .modal-icon{font-size:2rem;margin-bottom:.75rem;}
+  .modal h3{font-size:1.1rem;margin-bottom:.5rem;}
+  .modal p{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-bottom:1.5rem;}
+  .modal-item{color:var(--text);}
+  .modal-actions{display:flex;gap:.75rem;}
+  .modal-actions .btn{flex:1;justify-content:center;}
+
+  #toast-container{position:fixed;bottom:2rem;right:2rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;}
+  .toast{font-family:var(--mono);font-size:.78rem;padding:12px 18px;border-radius:8px;border:1px solid;backdrop-filter:blur(12px);animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;display:flex;align-items:center;gap:8px;}
+  .toast-success{background:rgba(0,229,160,.1);color:var(--accent);border-color:rgba(0,229,160,.3);}
+  .toast-error{background:rgba(255,59,92,.1);color:var(--danger);border-color:rgba(255,59,92,.3);}
+  .toast-warn{background:rgba(255,200,69,.1);color:var(--warn);border-color:rgba(255,200,69,.3);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateX(20px)}}
+
+  @media(max-width:900px){.app{grid-template-columns:1fr;}.header-stats{display:none;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    UsuariosApp
+    <span class="badge-aws">AWS · DYNAMODB · us-east-2</span>
+  </div>
+  <div class="header-stats">
+    <span>TOTAL <span class="stat-val" id="stat-total">0</span></span>
+    <span>TABLA <span class="stat-val">Usuarios</span></span>
+    <span>BACKEND <span class="stat-val">Flask + boto3</span></span>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- FORMULARIO CREATE / UPDATE -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">// <span id="form-mode-label">CREAR</span> USUARIO</span>
+        <span class="mode-badge mode-create" id="mode-badge">● CREATE</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- Formulario apunta al backend Flask -->
+        <form id="main-form" method="POST" action="/guardar" onsubmit="return validar()">
+          <input type="hidden" name="id" id="f-id"/>
+
+          <div class="form-group">
+            <label>ID del Usuario *</label>
+            <input type="text" name="id_visible" id="f-id-visible" placeholder="ej. 1001"/>
+            <div class="error-msg" id="err-id">El ID es obligatorio.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" name="nombre" id="f-nombre" placeholder="ej. Juan García"/>
+            <div class="error-msg" id="err-nombre">El nombre es obligatorio.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Correo electrónico *</label>
+            <input type="email" name="correo" id="f-correo" placeholder="ej. juan@email.com"/>
+            <div class="error-msg" id="err-correo">Correo inválido o vacío.</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <span id="btn-icon">＋</span>
+            <span id="btn-text">GUARDAR USUARIO</span>
+          </button>
+        </form>
+
+        <a href="/" class="btn btn-cancel" id="btn-cancel" style="display:none; margin-top:8px;">
+          ✕ CANCELAR EDICIÓN
+        </a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA READ -->
+  <div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">// USUARIOS <span id="count-label">(0 usuarios)</span></span>
+      </div>
+      <div class="panel-body">
+
+        <div class="search-bar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Buscar por nombre o correo..." oninput="filtrar()"/>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Filas inyectadas por Flask via Jinja2 o por JS -->
+            </tbody>
+          </table>
+          <div class="empty-state" id="empty-state" style="display:none;">
+            <div class="empty-icon">👤</div>
+            <p>No hay usuarios registrados.</p>
+            <p style="margin-top:6px;color:#3a3d4a">Agrega el primero usando el formulario.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMACIÓN DELETE -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <h3>Eliminar Usuario</h3>
+    <p>¿Estás seguro de que deseas eliminar a <span class="modal-item" id="modal-nombre"></span>?<br/>Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-delete">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Datos inyectados desde Flask -->
+<script id="datos-usuarios" type="application/json">
+  {{ usuarios_json | safe }}
+</script>
+
+<script>
+// ── CARGAR DATOS DESDE FLASK ──
+let usuarios = [];
+try {
+  const raw = document.getElementById('datos-usuarios').textContent.trim();
+  usuarios = JSON.parse(raw);
+} catch(e) {
+  usuarios = [];
+}
+
+let deleteId = null;
+let deleteName = '';
+
+// ── RENDER TABLA ──
+function renderTabla(lista) {
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty-state');
+  tbody.innerHTML = '';
+
+  document.getElementById('count-label').textContent =
+    `(${lista.length} usuario${lista.length !== 1 ? 's' : ''})`;
+  document.getElementById('stat-total').textContent = lista.length;
+
+  if (lista.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  lista.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-id">${esc(u.id)}</td>
+      <td class="td-name">${esc(u.nombre)}</td>
+      <td class="td-email">${esc(u.correo)}</td>
+      <td><div class="actions">
+        <a class="btn btn-edit" href="/editar/${esc(u.id)}">✎ Editar</a>
+        <button class="btn btn-danger" onclick="abrirModal('${escA(u.id)}','${escA(u.nombre)}')">✕ Eliminar</button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── FILTRO EN TIEMPO REAL ──
+function filtrar() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const filtrados = !q ? usuarios : usuarios.filter(u =>
+    u.nombre.toLowerCase().includes(q) || u.correo.toLowerCase().includes(q)
+  );
+  renderTabla(filtrados);
+}
+
+// ── VALIDACIÓN ──
+function validar() {
+  let ok = true;
+  const idV   = document.getElementById('f-id-visible').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const correo = document.getElementById('f-correo').value.trim();
+  const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const se = (errId, fieldId, show) => {
+    document.getElementById(errId).classList.toggle('show', show);
+    document.getElementById(fieldId).classList.toggle('error', show);
+    if (show) ok = false;
+  };
+
+  se('err-id',     'f-id-visible', !idV);
+  se('err-nombre', 'f-nombre',     !nombre);
+  se('err-correo', 'f-correo',     !correo || !emailRx.test(correo));
+
+  if (!ok) toast('Corrige los campos marcados.', 'error');
+
+  // Sincronizar campo oculto id
+  document.getElementById('f-id').value = idV;
+  return ok;
+}
+
+// ── MODAL DELETE ──
+function abrirModal(id, nombre) {
+  deleteId = id; deleteName = nombre;
+  document.getElementById('modal-nombre').textContent = `"${nombre}"`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function cerrarModal() {
+  deleteId = null;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+document.getElementById('btn-confirmar-delete').onclick = () => {
+  if (!deleteId) return;
+  window.location.href = `/eliminar/${deleteId}`;
+};
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) cerrarModal();
+});
+
+// ── TOAST ──
+function toast(msg, type = 'success') {
+  const icons = {success:'✓', error:'✕', warn:'⚠'};
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+// ── ESCAPE ──
+function esc(s)  { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escA(s) { return String(s||'').replace(/'/g,'&#39;'); }
+
+// ── INIT ──
+renderTabla(usuarios);
+</script>
+</body>
+</html>
