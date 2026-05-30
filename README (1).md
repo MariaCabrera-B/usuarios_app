@@ -1,10 +1,10 @@
-# 👤 UsuariosApp — CRUD con AWS y DynamoDB
+# UsuariosApp — CRUD con AWS y DynamoDB
 
 > Aplicación web para gestión de usuarios con las cuatro operaciones CRUD completas, desplegada en la capa gratuita de AWS. Backend en **Python + Flask + boto3**, base de datos **Amazon DynamoDB**.
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -43,7 +43,7 @@
 
 ---
 
-## ⚙️ Servicios AWS Utilizados (Capa Gratuita)
+## Servicios AWS Utilizados (Capa Gratuita)
 
 | Servicio | Uso | Límite gratuito |
 |---|---|---|
@@ -54,7 +54,7 @@
 
 ---
 
-## 🗄️ Diseño de la Tabla DynamoDB
+## Diseño de la Tabla DynamoDB
 
 **Nombre:** `Usuarios` · **Región:** `us-east-2` (Ohio)
 
@@ -68,7 +68,7 @@
 
 ---
 
-## 🚀 Pasos de Instalación y Despliegue
+## Pasos de Instalación y Despliegue
 
 ### Requisitos previos
 - Python 3.8+
@@ -114,23 +114,23 @@ eb open
 
 ---
 
-## 🔄 Operaciones CRUD Implementadas
+## Operaciones CRUD Implementadas
 
-### ➕ CREATE — `POST /guardar`
+###  CREATE — `POST /guardar`
 Registra un nuevo usuario en DynamoDB. Valida que id, nombre y correo estén completos y que el correo tenga formato válido antes de guardar.
 
-### 📋 READ — `GET /`
+###  READ — `GET /`
 Lista todos los usuarios de la tabla. Incluye búsqueda en tiempo real por nombre o correo desde el frontend.
 
-### ✏️ UPDATE — `GET /editar/<id>` + `POST /actualizar`
+###  UPDATE — `GET /editar/<id>` + `POST /actualizar`
 Carga el formulario con los datos pre-cargados del usuario. Actualiza nombre y correo en DynamoDB manteniendo el mismo id.
 
-### 🗑️ DELETE — `GET /eliminar/<id>`
+###  DELETE — `GET /eliminar/<id>`
 Elimina el usuario con confirmación explícita mediante modal antes de ejecutar la acción.
 
 ---
 
-## 🔐 Seguridad
+## Seguridad
 
 - HTTPS habilitado en Elastic Beanstalk
 - IAM usuario Deivid con política de mínimo privilegio
@@ -140,7 +140,7 @@ Elimina el usuario con confirmación explícita mediante modal antes de ejecutar
 
 ---
 
-## 🛠️ Manejo de Errores
+##  Manejo de Errores
 
 | Situación | Comportamiento |
 |---|---|
@@ -151,7 +151,7 @@ Elimina el usuario con confirmación explícita mediante modal antes de ejecutar
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 usuarios-app/
@@ -164,7 +164,7 @@ usuarios-app/
 
 ---
 
-## 💡 Decisiones Técnicas
+##  Decisiones Técnicas
 
 | Decisión | Justificación |
 |---|---|
@@ -176,7 +176,7 @@ usuarios-app/
 
 ---
 
-## 👥 Equipo
+## Equipo
 
 | Integrante | Responsabilidad |
 |---|---|
@@ -185,12 +185,3 @@ usuarios-app/
 | Persona 3 | Frontend, documentación técnica, sustentación |
 
 ---
-
-## 📎 Entregables
-
-- 🔗 **URL de la app:** *(pendiente — Persona 1)*
-- 💾 **Repositorio:** `https://github.com/tu-usuario/usuarios-app`
-- 📄 **Documentación:** Este README
-
----
-*Actividad Práctica — 30% de la nota final | AWS Capa Gratuita + Amazon DynamoDB*
